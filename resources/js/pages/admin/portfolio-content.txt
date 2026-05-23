@@ -1,0 +1,715 @@
+import type { FormEvent, ReactNode } from 'react';
+import { useState } from 'react';
+import { Head, useForm } from '@inertiajs/react';
+import { Save, ImagePlus, Plus, Trash2 } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import { edit, update } from '@/routes/admin/portfolio-content';
+
+type HeroForm = {
+    id: number;
+    eyebrow: string;
+    title: string;
+    highlight: string;
+    description: string;
+    button_label: string;
+    button_href: string;
+    image: string | File;
+    image_alt: string;
+};
+
+type NavbarForm = {
+    id: number;
+    brand: string;
+    resume_label: string;
+    documents_label: string;
+    item_type: 'link' | 'resume';
+    label: string;
+    href: string;
+    display_order: number;
+};
+
+type ServiceForm = {
+    id: number | string; // ID bisa string sementara untuk item baru
+    section_eyebrow: string;
+    section_title: string;
+    title: string;
+    description: string;
+    color: string;
+    icon_path: string;
+    display_order: number;
+};
+
+type ProjectForm = {
+    id: number | string;
+    section_eyebrow: string;
+    section_title: string;
+    title: string;
+    image: string | File | null;
+    image_alt: string;
+    tags: string;
+    description: string;
+    link: string;
+    is_external: boolean;
+    display_order: number;
+};
+
+type SkillForm = {
+    id: number | string;
+    section_eyebrow: string;
+    section_title: string;
+    section_description: string;
+    item_type: 'skill' | 'education';
+    name: string | null;
+    institution: string | null;
+    degree: string | null;
+    period: string | null;
+    is_current: boolean;
+    display_order: number;
+};
+
+type ContactForm = {
+    id: number;
+    section_eyebrow: string;
+    section_title: string;
+    form_action: string;
+    submit_label: string;
+    label: string;
+    value: string;
+    href: string | null;
+    icon_path: string;
+    display_order: number;
+};
+
+type FooterForm = {
+    id: number;
+    copyright: string;
+    name: string;
+    url: string;
+    icon_path: string;
+    hover_class: string;
+    display_order: number;
+};
+
+type PortfolioContentForm = {
+    hero: HeroForm;
+    navbars: NavbarForm[];
+    services: ServiceForm[];
+    projects: ProjectForm[];
+    skills: SkillForm[];
+    contacts: ContactForm[];
+    footers: FooterForm[];
+};
+
+type CollectionKey =
+    | 'navbars'
+    | 'services'
+    | 'projects'
+    | 'skills'
+    | 'contacts'
+    | 'footers';
+
+type FormErrors = Partial<Record<string, string>>;
+
+const fieldClass =
+    'w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
+
+function fieldError(errors: FormErrors, name: string) {
+    return errors[name] ? (
+        <p className="mt-1 text-xs text-red-600">{errors[name]}</p>
+    ) : null;
+}
+
+function TextInput({
+    label,
+    value,
+    onChange,
+    error,
+    type = 'text',
+}: {
+    label: string;
+    value: string | number | null;
+    onChange: (value: string) => void;
+    error?: string;
+    type?: 'text' | 'number';
+}) {
+    return (
+        <label className="block space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">
+                {label}
+            </span>
+            <input
+                type={type}
+                value={value ?? ''}
+                onChange={(event) => onChange(event.target.value)}
+                className={fieldClass}
+            />
+            {error && <p className="text-xs text-red-600">{error}</p>}
+        </label>
+    );
+}
+
+function TextArea({
+    label,
+    value,
+    onChange,
+    error,
+    rows = 3,
+}: {
+    label: string;
+    value: string | null;
+    onChange: (value: string) => void;
+    error?: string;
+    rows?: number;
+}) {
+    return (
+        <label className="block space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">
+                {label}
+            </span>
+            <textarea
+                rows={rows}
+                value={value ?? ''}
+                onChange={(event) => onChange(event.target.value)}
+                className={fieldClass}
+            />
+            {error && <p className="text-xs text-red-600">{error}</p>}
+        </label>
+    );
+}
+
+function ImageUploadInput({
+    label,
+    value,
+    onChange,
+    error,
+}: {
+    label: string;
+    value: string | File | null;
+    onChange: (file: File) => void;
+    error?: string;
+}) {
+    const [preview, setPreview] = useState<string | null>(
+        typeof value === 'string' ? value : null
+    );
+
+    return (
+        <div className="block space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">{label}</span>
+            <div className="flex items-center gap-4 rounded-md border p-3 bg-background shadow-xs">
+                {preview ? (
+                    <img src={preview} alt="Preview" className="h-16 w-28 rounded-md object-cover border" />
+                ) : (
+                    <div className="flex h-16 w-28 items-center justify-center rounded-md border border-dashed bg-muted text-muted-foreground">
+                        <ImagePlus className="h-6 w-6" />
+                    </div>
+                )}
+                <label className="cursor-pointer rounded-md bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 shadow-xs">
+                    Choose File
+                    <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                                onChange(file);
+                                setPreview(URL.createObjectURL(file));
+                            }
+                        }}
+                    />
+                </label>
+            </div>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+        </div>
+    );
+}
+
+function ColorPickerInput({
+    label,
+    value,
+    onChange,
+    error,
+}: {
+    label: string;
+    value: string;
+    onChange: (color: string) => void;
+    error?: string;
+}) {
+    // Fungsi pemetaan untuk mengubah text warna dasar menjadi HEX valid
+    const formatToHex = (colorVal: string): string => {
+        if (!colorVal) return '#3b82f6';
+        if (colorVal.startsWith('#')) return colorVal;
+
+        const colorMap: Record<string, string> = {
+            blue: '#3b82f6',
+            green: '#22c55e',
+            purple: '#a855f7',
+            red: '#ef4444',
+            yellow: '#eab308',
+            orange: '#f97316',
+            pink: '#ec4899',
+            gray: '#6b7280',
+            black: '#000000',
+            white: '#ffffff'
+        };
+
+        return colorMap[colorVal.toLowerCase()] || '#3b82f6';
+    };
+
+    const safeHexValue = formatToHex(value);
+
+    return (
+        <label className="block space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">{label}</span>
+            <div className="flex items-center gap-2">
+                <input
+                    type="color"
+                    value={safeHexValue}
+                    onChange={(e) => onChange(e.target.value)}
+                    className="h-9 w-12 cursor-pointer rounded-md border p-0 bg-background"
+                />
+                <input
+                    type="text"
+                    value={value || ''}
+                    onChange={(e) => onChange(e.target.value)}
+                    className={`${fieldClass} font-mono`}
+                    placeholder="#ffffff"
+                />
+            </div>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+        </label>
+    );
+}
+
+function LucideIconPicker({
+    label,
+    value,
+    onChange,
+    error,
+    color,
+}: {
+    label: string;
+    value: string;
+    onChange: (iconName: string) => void;
+    error?: string;
+    color?: string;
+}) {
+    const [open, setOpen] = useState(false);
+    const iconNames = Object.keys(LucideIcons).filter((key) => {
+        const item = (LucideIcons as any)[key];
+        return (
+            item &&
+            /^[A-Z]/.test(key) &&
+            (typeof item === 'function' || typeof item === 'object') &&
+            !Array.isArray(item)
+        );
+    });
+
+    const getSafeIconComponent = (name: string) => {
+        if (!name) return null;
+        const exactName = iconNames.find(i => i.toLowerCase() === name.toLowerCase());
+        if (exactName) return (LucideIcons as any)[exactName];
+        return null;
+    };
+
+    const SelectedIcon = getSafeIconComponent(value);
+
+    return (
+        <div className="block space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">{label}</span>
+            <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={open}
+                        className="w-full justify-between font-normal"
+                    >
+                        <div className="flex items-center gap-2">
+                            {SelectedIcon ? (
+                                <SelectedIcon className="h-4 w-4" style={{ color: color || 'currentColor' }} />
+                            ) : (
+                                <span className="text-muted-foreground text-xs">Select icon...</span>
+                            )}
+                            <span className="text-sm">{value || "None"}</span>
+                        </div>
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0" align="start">
+                    <Command>
+                        <CommandInput placeholder="Search icon..." />
+                        <CommandList>
+                            <CommandEmpty>No icon found.</CommandEmpty>
+                            <CommandGroup className="max-h-[200px] overflow-y-auto">
+                                {iconNames.map((iconName) => {
+                                    const IconComponent = getSafeIconComponent(iconName);
+                                    if (!IconComponent) return null;
+                                    return (
+                                        <CommandItem
+                                            key={iconName}
+                                            value={iconName.toLowerCase()}
+                                            onSelect={(currentValue) => {
+                                                const originalName = iconNames.find(
+                                                    (name) => name.toLowerCase() === currentValue.toLowerCase()
+                                                ) || iconName;
+                                                onChange(originalName);
+                                                setOpen(false);
+                                            }}
+                                        >
+                                            <div className="flex items-center gap-3 w-full">
+                                                <IconComponent className="h-4 w-4" style={{ color: color || 'currentColor' }} />
+                                                <span>{iconName}</span>
+                                            </div>
+                                        </CommandItem>
+                                    );
+                                })}
+                            </CommandGroup>
+                        </CommandList>
+                    </Command>
+                </PopoverContent>
+            </Popover>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+        </div>
+    );
+}
+
+export default function PortfolioContent(props: PortfolioContentForm) {
+    const { data, setData, post, transform, processing, errors, recentlySuccessful } =
+        useForm<PortfolioContentForm>({
+            hero: props.hero || {
+                id: 0, eyebrow: '', title: '', highlight: '',
+                description: '', button_label: '', button_href: '',
+                image: '', image_alt: ''
+            },
+            navbars: props.navbars || [],
+            services: props.services || [],
+            projects: props.projects || [],
+            skills: props.skills || [],
+            contacts: props.contacts || [],
+            footers: props.footers || [],
+        });
+    const updateHero = (values: Partial<HeroForm>) => {
+        setData('hero', { ...data.hero, ...values });
+    };
+
+    const updateRow = <Key extends CollectionKey>(
+        key: Key,
+        index: number,
+        values: Partial<PortfolioContentForm[Key][number]>,
+    ) => {
+        const updatedArray = data[key].map((row, rowIndex) =>
+            rowIndex === index ? { ...row, ...values } : row,
+        );
+        setData(key, updatedArray as any);
+    };
+
+    // Fungsi global update header section agar semua baris sinkron
+    const updateSectionHeader = <Key extends 'services' | 'projects' | 'skills' | 'contacts'>(
+        key: Key,
+        fields: { section_eyebrow?: string; section_title?: string; section_description?: string }
+    ) => {
+        const updatedArray = data[key].map((row) => ({
+            ...row,
+            ...fields
+        }));
+        setData(key, updatedArray as any);
+    };
+
+    // Fungsi Tambah Service Baru
+    const addService = () => {
+        const first = data.services[0];
+        const newService: ServiceForm = {
+            id: `new_${Date.now()}`,
+            section_eyebrow: first?.section_eyebrow || '',
+            section_title: first?.section_title || '',
+            title: '',
+            description: '',
+            color: '#3b82f6',
+            icon_path: 'Briefcase',
+            display_order: data.services.length + 1,
+        };
+        setData('services', [...data.services, newService]);
+    };
+
+    // Fungsi Tambah Project Baru
+    const addProject = () => {
+        const first = data.projects[0];
+        const newProject: ProjectForm = {
+            id: `new_${Date.now()}`,
+            section_eyebrow: first?.section_eyebrow || '',
+            section_title: first?.section_title || '',
+            title: '',
+            image: null,
+            image_alt: '',
+            tags: '',
+            description: '',
+            link: '',
+            is_external: false,
+            display_order: data.projects.length + 1,
+        };
+        setData('projects', [...data.projects, newProject]);
+    };
+
+    // Fungsi Hapus baris dinamis (lokal state frontend)
+    const removeRow = <Key extends 'services' | 'projects'>(key: Key, index: number) => {
+        const filtered = data[key].filter((_, i) => i !== index);
+        setData(key, filtered as any);
+    };
+
+    const submit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        transform((data) => ({
+            ...data,
+            _method: 'PATCH',
+        }));
+        post(update.url(), {
+            preserveScroll: true,
+            forceFormData: true,
+        });
+    };
+
+    // Pisahkan data skill berdasar tipenya untuk tampilan
+    const skillItems = data.skills.filter(s => s.item_type === 'skill');
+    const educationItems = data.skills.filter(s => s.item_type === 'education');
+
+    return (
+        <>
+            <Head title="Portfolio Content" />
+
+            <form onSubmit={submit} className="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-2xl font-semibold tracking-tight">Portfolio Content</h1>
+                        <p className="text-sm text-muted-foreground">Edit homepage content from dedicated database tables.</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        {recentlySuccessful && <span className="text-sm text-green-600">Saved Successfully</span>}
+                        <Button type="submit" disabled={processing}>
+                            <Save className="mr-2 h-4 w-4" /> Save changes
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Hero Section */}
+                <Card>
+                    <CardHeader><CardTitle>Hero Section</CardTitle></CardHeader>
+                    <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <TextInput label="Eyebrow" value={data.hero.eyebrow} onChange={(eyebrow) => updateHero({ eyebrow })} error={errors['hero.eyebrow']} />
+                        <TextInput label="Title" value={data.hero.title} onChange={(title) => updateHero({ title })} error={errors['hero.title']} />
+                        <TextInput label="Highlight" value={data.hero.highlight} onChange={(highlight) => updateHero({ highlight })} error={errors['hero.highlight']} />
+                        <TextInput label="Button Label" value={data.hero.button_label} onChange={(button_label) => updateHero({ button_label })} error={errors['hero.button_label']} />
+                        <TextInput label="Button Link" value={data.hero.button_href} onChange={(button_href) => updateHero({ button_href })} error={errors['hero.button_href']} />
+                        <TextInput label="Image Alt" value={data.hero.image_alt} onChange={(image_alt) => updateHero({ image_alt })} error={errors['hero.image_alt']} />
+                        <div className="md:col-span-2"><ImageUploadInput label="Hero Image File" value={data.hero.image} onChange={(image) => updateHero({ image })} error={errors['hero.image']} /></div>
+                        <div className="md:col-span-2"><TextArea label="Description" value={data.hero.description} onChange={(description) => updateHero({ description })} error={errors['hero.description']} rows={4} /></div>
+                    </CardContent>
+                </Card>
+
+                {/* Navbar Section */}
+                <EditableRows title="Navbar" rows={data.navbars} errors={errors} prefix="navbars" render={(row, index) => (
+                    <>
+                        <TextInput label="Brand" value={row.brand} onChange={(brand) => updateRow('navbars', index, { brand })} error={errors[`navbars.${index}.brand`]} />
+                        <TextInput label="Resume Label" value={row.resume_label} onChange={(resume_label) => updateRow('navbars', index, { resume_label })} error={errors[`navbars.${index}.resume_label`]} />
+                        <TextInput label="Documents Label" value={row.documents_label} onChange={(documents_label) => updateRow('navbars', index, { documents_label })} error={errors[`navbars.${index}.documents_label`]} />
+                        <div className="block space-y-1">
+                            <span className="text-xs font-medium text-muted-foreground">Item Type</span>
+                            <Select value={row.item_type} onValueChange={(value) => updateRow('navbars', index, { item_type: value as NavbarForm['item_type'] })}>
+                                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                                <SelectContent><SelectItem value="link">Link</SelectItem><SelectItem value="resume">Resume</SelectItem></SelectContent>
+                            </Select>
+                        </div>
+                        <TextInput label="Label" value={row.label} onChange={(label) => updateRow('navbars', index, { label })} error={errors[`navbars.${index}.label`]} />
+                        <TextInput label="Href" value={row.href} onChange={(href) => updateRow('navbars', index, { href })} error={errors[`navbars.${index}.href`]} />
+                        <TextInput label="Order" type="number" value={row.display_order} onChange={(v) => updateRow('navbars', index, { display_order: Number(v) })} error={errors[`navbars.${index}.display_order`]} />
+                    </>
+                )} />
+
+                {/* Services Section */}
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                        <CardTitle>Services</CardTitle>
+                        <Button type="button" variant="outline" size="sm" onClick={addService}><Plus className="mr-1 h-3.5 w-3.5" />Add Service</Button>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {/* 1 Saja Section Description di Atas */}
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 rounded-lg border border-dashed p-4 bg-muted/10">
+                            <TextInput label="Section Eyebrow" value={data.services[0]?.section_eyebrow || ''} onChange={(v) => updateSectionHeader('services', { section_eyebrow: v })} />
+                            <TextInput label="Section Title" value={data.services[0]?.section_title || ''} onChange={(v) => updateSectionHeader('services', { section_title: v })} />
+                        </div>
+                        {data.services.map((row, index) => (
+                            <div key={row.id} className="relative rounded-lg border p-4 bg-background grid grid-cols-1 gap-4 md:grid-cols-2 pt-8">
+                                <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-2 text-destructive hover:bg-destructive/10" onClick={() => removeRow('services', index)}><Trash2 className="h-4 w-4" /></Button>
+                                <TextInput label="Title" value={row.title} onChange={(v) => updateRow('services', index, { title: v })} error={errors[`services.${index}.title`]} />
+                                <ColorPickerInput label="Custom Color" value={row.color} onChange={(v) => updateRow('services', index, { color: v })} error={errors[`services.${index}.color`]} />
+                                <LucideIconPicker label="Select Icon" value={row.icon_path} color={row.color} onChange={(v) => updateRow('services', index, { icon_path: v })} error={errors[`services.${index}.icon_path`]} />
+                                <TextInput label="Order" type="number" value={row.display_order} onChange={(v) => updateRow('services', index, { display_order: Number(v) })} error={errors[`services.${index}.display_order`]} />
+                                <div className="md:col-span-2"><TextArea label="Description" value={row.description} onChange={(v) => updateRow('services', index, { description: v })} error={errors[`services.${index}.description`]} /></div>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+
+                {/* Projects Section */}
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                        <CardTitle>Projects</CardTitle>
+                        <Button type="button" variant="outline" size="sm" onClick={addProject}><Plus className="mr-1 h-3.5 w-3.5" />Add Project</Button>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {/* 1 Saja Section Description di Atas */}
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 rounded-lg border border-dashed p-4 bg-muted/10">
+                            <TextInput label="Section Eyebrow" value={data.projects[0]?.section_eyebrow || ''} onChange={(v) => updateSectionHeader('projects', { section_eyebrow: v })} />
+                            <TextInput label="Section Title" value={data.projects[0]?.section_title || ''} onChange={(v) => updateSectionHeader('projects', { section_title: v })} />
+                        </div>
+                        {data.projects.map((row, index) => (
+                            <div key={row.id} className="relative rounded-lg border p-4 bg-background grid grid-cols-1 gap-4 md:grid-cols-2 pt-8">
+                                <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-2 text-destructive hover:bg-destructive/10" onClick={() => removeRow('projects', index)}><Trash2 className="h-4 w-4" /></Button>
+                                <TextInput label="Title" value={row.title} onChange={(v) => updateRow('projects', index, { title: v })} error={errors[`projects.${index}.title`]} />
+                                <TextInput label="Image Alt" value={row.image_alt} onChange={(v) => updateRow('projects', index, { image_alt: v })} error={errors[`projects.${index}.image_alt`]} />
+                                <TextInput label="Tags" value={row.tags} onChange={(v) => updateRow('projects', index, { tags: v })} error={errors[`projects.${index}.tags`]} />
+                                <TextInput label="Link" value={row.link} onChange={(v) => updateRow('projects', index, { link: v })} error={errors[`projects.${index}.link`]} />
+                                <TextInput label="Order" type="number" value={row.display_order} onChange={(v) => updateRow('projects', index, { display_order: Number(v) })} error={errors[`projects.${index}.display_order`]} />
+                                <div className="flex items-center gap-2 pt-6">
+                                    <input type="checkbox" id={`proj_ext_${index}`} checked={row.is_external} onChange={(e) => updateRow('projects', index, { is_external: e.target.checked })} className="rounded border-gray-300 h-4 w-4" />
+                                    <label htmlFor={`proj_ext_${index}`} className="text-sm font-medium">External link</label>
+                                </div>
+                                <div className="md:col-span-2"><ImageUploadInput label="Project Image File" value={row.image} onChange={(v) => updateRow('projects', index, { image: v })} error={errors[`projects.${index}.image`]} /></div>
+                                <div className="md:col-span-2"><TextArea label="Description" value={row.description} onChange={(v) => updateRow('projects', index, { description: v })} error={errors[`projects.${index}.description`]} /></div>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+
+                {/* Shared Skills & Education Main Header */}
+                <Card>
+                    <CardHeader><CardTitle>Skills & Education Section Headers</CardTitle></CardHeader>
+                    <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <TextInput label="Section Eyebrow" value={data.skills[0]?.section_eyebrow || ''} onChange={(v) => updateSectionHeader('skills', { section_eyebrow: v })} />
+                        <TextInput label="Section Title" value={data.skills[0]?.section_title || ''} onChange={(v) => updateSectionHeader('skills', { section_title: v })} />
+                        <div className="md:col-span-2">
+                            <TextArea label="Section Description" value={data.skills[0]?.section_description || ''} onChange={(v) => updateSectionHeader('skills', { section_description: v })} />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Tampilan Terpisah: Card Khusus SKILLS */}
+                <Card>
+                    <CardHeader><CardTitle>My Skills List</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        {data.skills.map((row, index) => {
+                            if (row.item_type !== 'skill') return null;
+                            return (
+                                <div key={row.id} className="rounded-lg border p-4 bg-background grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    <TextInput label="Skill Name" value={row.name} onChange={(v) => updateRow('skills', index, { name: v })} error={errors[`skills.${index}.name`]} />
+                                    <TextInput label="Order" type="number" value={row.display_order} onChange={(v) => updateRow('skills', index, { display_order: Number(v) })} error={errors[`skills.${index}.display_order`]} />
+                                </div>
+                            );
+                        })}
+                    </CardContent>
+                </Card>
+
+                {/* Tampilan Terpisah: Card Khusus EDUCATION */}
+                <Card>
+                    <CardHeader><CardTitle>Education & History List</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                        {data.skills.map((row, index) => {
+                            if (row.item_type !== 'education') return null;
+                            return (
+                                <div key={row.id} className="rounded-lg border p-4 bg-background grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    <TextInput label="Institution" value={row.institution} onChange={(v) => updateRow('skills', index, { institution: v })} error={errors[`skills.${index}.institution`]} />
+                                    <TextInput label="Degree" value={row.degree} onChange={(v) => updateRow('skills', index, { degree: v })} error={errors[`skills.${index}.degree`]} />
+                                    <TextInput label="Period" value={row.period} onChange={(v) => updateRow('skills', index, { period: v })} error={errors[`skills.${index}.period`]} />
+                                    <TextInput label="Order" type="number" value={row.display_order} onChange={(v) => updateRow('skills', index, { display_order: Number(v) })} error={errors[`skills.${index}.display_order`]} />
+                                    <div className="flex items-center gap-2 pt-6">
+                                        <input type="checkbox" id={`edu_curr_${index}`} checked={row.is_current} onChange={(e) => updateRow('skills', index, { is_current: e.target.checked })} className="rounded border-gray-300 h-4 w-4" />
+                                        <label htmlFor={`edu_curr_${index}`} className="text-sm font-medium">Still Studying Here</label>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </CardContent>
+                </Card>
+
+                {/* Contact Section */}
+                <Card>
+                    <CardHeader><CardTitle>Contact</CardTitle></CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 rounded-lg border border-dashed p-4 bg-muted/10">
+                            <TextInput label="Section Eyebrow" value={data.contacts[0]?.section_eyebrow || ''} onChange={(v) => updateSectionHeader('contacts', { section_eyebrow: v })} />
+                            <TextInput label="Section Title" value={data.contacts[0]?.section_title || ''} onChange={(v) => updateSectionHeader('contacts', { section_title: v })} />
+                        </div>
+                        {data.contacts.map((row, index) => (
+                            <div key={row.id} className="rounded-lg border p-4 bg-background grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <TextInput label="Form Action" value={row.form_action} onChange={(v) => updateRow('contacts', index, { form_action: v })} error={errors[`contacts.${index}.form_action`]} />
+                                <TextInput label="Submit Label" value={row.submit_label} onChange={(v) => updateRow('contacts', index, { submit_label: v })} error={errors[`contacts.${index}.submit_label`]} />
+                                <TextInput label="Label" value={row.label} onChange={(v) => updateRow('contacts', index, { label: v })} error={errors[`contacts.${index}.label`]} />
+                                <TextInput label="Href" value={row.href} onChange={(v) => updateRow('contacts', index, { href: v })} error={errors[`contacts.${index}.href`]} />
+                                <LucideIconPicker label="Contact Icon" value={row.icon_path} onChange={(v) => updateRow('contacts', index, { icon_path: v })} error={errors[`contacts.${index}.icon_path`]} />
+                                <TextInput label="Order" type="number" value={row.display_order} onChange={(v) => updateRow('contacts', index, { display_order: Number(v) })} error={errors[`contacts.${index}.display_order`]} />
+                                <div className="md:col-span-2"><TextArea label="Value" value={row.value} onChange={(v) => updateRow('contacts', index, { value: v })} error={errors[`contacts.${index}.value`]} /></div>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+
+                {/* Footer Section */}
+                <EditableRows title="Footer" rows={data.footers} errors={errors} prefix="footers" render={(row, index) => (
+                    <>
+                        <TextInput label="Copyright" value={row.copyright} onChange={(v) => updateRow('footers', index, { copyright: v })} error={errors[`footers.${index}.copyright`]} />
+                        <TextInput label="Name" value={row.name} onChange={(v) => updateRow('footers', index, { name: v })} error={errors[`footers.${index}.name`]} />
+                        <TextInput label="URL" value={row.url} onChange={(v) => updateRow('footers', index, { url: v })} error={errors[`footers.${index}.url`]} />
+                        <TextInput label="Hover Class" value={row.hover_class} onChange={(v) => updateRow('footers', index, { hover_class: v })} error={errors[`footers.${index}.hover_class`]} />
+                        <TextInput label="Order" type="number" value={row.display_order} onChange={(v) => updateRow('footers', index, { display_order: Number(v) })} error={errors[`footers.${index}.display_order`]} />
+                        <div className="md:col-span-2"><LucideIconPicker label="Footer Icon" value={row.icon_path} onChange={(v) => updateRow('footers', index, { icon_path: v })} error={errors[`footers.${index}.icon_path`]} /></div>
+                    </>
+                )} />
+            </form>
+        </>
+    );
+}
+
+function EditableRows<Row extends { id: number | string;[key: string]: any }>({
+    title, rows, errors, prefix, render,
+}: {
+    title: string; rows: Row[]; errors: FormErrors; prefix: string; render: (row: Row, index: number) => ReactNode;
+}) {
+    return (
+        <Card>
+            <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+                {rows.map((row, index) => (
+                    <div key={row.id} className="rounded-lg border bg-muted/20 p-4">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                            <h3 className="font-medium">{row.title || row.label || row.name || `${title} ${index + 1}`}</h3>
+                            <span className="text-xs text-muted-foreground">#{row.id}</span>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">{render(row, index)}</div>
+                        {fieldError(errors, `${prefix}.${index}.id`)}
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    );
+}
