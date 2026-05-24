@@ -42,6 +42,35 @@ const intensityConfig: Record<ParallaxIntensity, IntensitySettings> = {
     },
 };
 
+/**
+ * depthIndex: nomor urut section (0-based).
+ * Genap  → maju ke depan  (translateZ +, rotateY -, tilt kiri)
+ * Ganjil → mundur ke belakang (translateZ -, rotateY +, tilt kanan)
+ */
+const depthProfiles = [
+    // index 0 – Hero: maju, tilt kiri
+    { translateZ: [80, 0, -40], rotateY: [-5, 0, 3], rotateX: [2, 0, -1] },
+    // index 1 – Services: mundur, tilt kanan
+    { translateZ: [-40, 0, 60], rotateY: [4, 0, -5], rotateX: [-1, 0, 2] },
+    // index 2 – Projects: maju, tilt kiri (lebih dalam)
+    { translateZ: [100, 0, -60], rotateY: [-6, 0, 4], rotateX: [3, 0, -2] },
+    // index 3 – Skills: mundur, tilt kanan (lebih dalam)
+    { translateZ: [-60, 0, 80], rotateY: [5, 0, -6], rotateX: [-2, 0, 3] },
+    // index 4 – Contact: maju, tilt kiri
+    { translateZ: [70, 0, -50], rotateY: [-4, 0, 3], rotateX: [2, 0, -1] },
+    // fallback untuk index >4 – alternating
+    { translateZ: [50, 0, -50], rotateY: [-3, 0, 3], rotateX: [1, 0, -1] },
+];
+
+function getDepthProfile(index: number) {
+    if (index < depthProfiles.length - 1) return depthProfiles[index];
+    // Untuk section di luar tabel: alternating genap/ganjil
+    const isEven = index % 2 === 0;
+    return isEven
+        ? { translateZ: [60, 0, -40], rotateY: [-4, 0, 3], rotateX: [2, 0, -1] }
+        : { translateZ: [-40, 0, 60], rotateY: [4, 0, -4], rotateX: [-2, 0, 2] };
+}
+
 function useSectionFocusMotion(
     focusProgress: MotionValue<number>,
     scalePeak: number,
@@ -66,6 +95,23 @@ function useSectionFocusMotion(
     return { scale, filter };
 }
 
+function use3DDepthMotion(
+    scrollYProgress: MotionValue<number>,
+    depthIndex: number,
+) {
+    const profile = getDepthProfile(depthIndex);
+
+    const rawTZ = useTransform(scrollYProgress, [0, 0.5, 1], profile.translateZ);
+    const rawRY = useTransform(scrollYProgress, [0, 0.5, 1], profile.rotateY);
+    const rawRX = useTransform(scrollYProgress, [0, 0.5, 1], profile.rotateX);
+
+    const translateZ = useSpring(rawTZ, { stiffness: 70, damping: 22, mass: 0.9 });
+    const rotateY    = useSpring(rawRY, { stiffness: 60, damping: 20, mass: 1.0 });
+    const rotateX    = useSpring(rawRX, { stiffness: 60, damping: 20, mass: 1.0 });
+
+    return { translateZ, rotateY, rotateX };
+}
+
 interface ParallaxSectionProps {
     id: string;
     children: ReactNode;
@@ -73,6 +119,12 @@ interface ParallaxSectionProps {
     showParticles?: boolean;
     particleCount?: number;
     intensity?: ParallaxIntensity;
+    /**
+     * Nomor urut section (0-based).
+     * 0 = Hero, 1 = Services, 2 = Projects, 3 = Skills, 4 = Contact, dst.
+     * Menentukan arah & kedalaman 3D yang selang-seling.
+     */
+    depthIndex?: number;
 }
 
 export function ParallaxSection({
@@ -82,8 +134,10 @@ export function ParallaxSection({
     showParticles = false,
     particleCount = 120,
     intensity = 'medium',
+    depthIndex = 0,
 }: ParallaxSectionProps) {
     const ref = useRef<HTMLElement>(null);
+
     const { scrollYProgress } = useScroll({
         target: ref,
         offset: ['start end', 'end start'],
@@ -96,13 +150,19 @@ export function ParallaxSection({
 
     const { content, background, scalePeak, blurMax } = intensityConfig[intensity];
 
-    const contentY = useSpring(useTransform(scrollYProgress, [0, 0.5, 1], content), springConfig);
+    const contentY = useSpring(
+        useTransform(scrollYProgress, [0, 0.5, 1], content),
+        springConfig,
+    );
     const backgroundY = useSpring(
         useTransform(scrollYProgress, [0, 0.5, 1], background),
         { ...springConfig, stiffness: 70, damping: 30 },
     );
 
     const { scale, filter } = useSectionFocusMotion(focusProgress, scalePeak, blurMax);
+
+    // 3D depth selang-seling
+    const { translateZ, rotateY, rotateX } = use3DDepthMotion(scrollYProgress, depthIndex);
 
     return (
         <section
@@ -129,11 +189,19 @@ export function ParallaxSection({
                 </motion.div>
             )}
 
+            {/*
+             * transformPerspective ditaruh di sini agar translateZ & rotateY
+             * benar-benar dirender dalam ruang 3D, bukan hanya efek 2D.
+             */}
             <motion.div
                 style={{
                     y: contentY,
                     scale,
                     filter,
+                    translateZ,
+                    rotateY,
+                    rotateX,
+                    transformPerspective: 1400,
                     transformOrigin: 'center center',
                 }}
                 className="relative z-10 will-change-[transform,filter]"

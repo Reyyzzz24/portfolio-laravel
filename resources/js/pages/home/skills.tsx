@@ -26,9 +26,10 @@ type SkillsProps = {
   section: ResumeSection | null;
   skills: SkillItem[];
   education: EducationItem[];
+  depthIndex?: number;
 };
 
-const Skills = ({ section, skills = [], education = [] }: SkillsProps) => {
+const Skills = ({ section, skills = [], education = [], depthIndex = 3 }: SkillsProps) => {
   const actualSkills = Array.isArray(skills) ? skills : [];
   const actualEducation = Array.isArray(education) ? education : [];
 
@@ -41,7 +42,7 @@ const Skills = ({ section, skills = [], education = [] }: SkillsProps) => {
   const description = section?.section_description || '';
 
   return (
-    <ParallaxSection id="skills" intensity="medium" className="bg-gray-50 dark:bg-background">
+    <ParallaxSection id="skills" intensity="medium" depthIndex={depthIndex} className="bg-gray-50 dark:bg-background">
       <div
         className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05]"
         style={{

@@ -9,7 +9,13 @@ import type { PortfolioContent } from '@/types';
 import { SplitText } from '@/components/SplitText';
 import { ParallaxSection } from '@/components/ParallaxSection';
 
-const Hero = ({ content }: { content: PortfolioContent['hero'] }) => {
+const Hero = ({
+    content,
+    depthIndex = 0,
+}: {
+    content: PortfolioContent['hero'];
+    depthIndex?: number;
+}) => {
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
     const rotateYMouse = useSpring(useTransform(mouseX, [-0.5, 0.5], [-8, 8]), {
@@ -37,6 +43,7 @@ const Hero = ({ content }: { content: PortfolioContent['hero'] }) => {
             showParticles
             particleCount={200}
             intensity="strong"
+            depthIndex={depthIndex}
             className="!py-20 lg:!py-32"
         >
             <div className="relative">

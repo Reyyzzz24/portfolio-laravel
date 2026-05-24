@@ -1,4 +1,3 @@
-import { useHomepageScrollSnap } from '@/hooks/use-homepage-scroll-snap';
 import Contact from './home/contact';
 import Footer from './home/footer';
 import Hero from './home/hero';
@@ -8,7 +7,7 @@ import Services from './home/services';
 import Skills from './home/skills';
 
 interface HomePageProps {
-    navbar: any[] | null; // Navbar tetap array sesuai controller
+    navbar: any[] | null;
     hero: any | null;
     services: { eyebrow: string; title: string; items: any[] } | null;
     projects: { eyebrow: string; title: string; items: any[] } | null;
@@ -17,9 +16,9 @@ interface HomePageProps {
         title: string;
         formAction: string;
         submitLabel: string;
-        items: { label: string; value: string; href: string | null; iconPath: string }[]
+        items: { label: string; value: string; href: string | null; iconPath: string }[];
     } | null;
-    footer: any[] | null; // Footer tetap array[cite: 2]
+    footer: any[] | null;
     section: any;
     skills: any[];
     education: any[];
@@ -36,19 +35,24 @@ const HomePage = ({
     skills = [],
     education = [],
 }: HomePageProps) => {
-    useHomepageScrollSnap();
-
     return (
         <main className="homepage-root relative min-h-screen overflow-x-hidden bg-white text-foreground dark:bg-gray-900">
             <Navbar content={navbar} />
 
-            <div className="homepage-ruler">
-                <Hero content={hero} />
-                <Services content={services} />
-                <Projects content={projects} />
-                <Skills section={section} skills={skills} education={education} />
-                <Contact content={contact} />
-            </div>
+            {/* depthIndex 0: Hero maju ke depan, tilt kiri */}
+            <Hero content={hero} depthIndex={0} />
+
+            {/* depthIndex 1: Services mundur ke belakang, tilt kanan */}
+            <Services content={services} depthIndex={1} />
+
+            {/* depthIndex 2: Projects maju jauh, tilt kiri */}
+            <Projects content={projects} depthIndex={2} />
+
+            {/* depthIndex 3: Skills mundur jauh, tilt kanan */}
+            <Skills section={section} skills={skills} education={education} depthIndex={3} />
+
+            {/* depthIndex 4: Contact maju, tilt kiri */}
+            <Contact content={contact} depthIndex={4} />
 
             <Footer content={footer} />
         </main>

@@ -19,7 +19,13 @@ const itemVariants: Variants = {
     visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } },
 };
 
-const Services = ({ content }: { content: PortfolioContent['services'] | any[] | null }) => {
+const Services = ({
+    content,
+    depthIndex = 1,
+}: {
+    content: PortfolioContent['services'] | any[] | null;
+    depthIndex?: number;
+}) => {
     const contentObj = Array.isArray(content)
         ? {
             eyebrow: content[0]?.section_eyebrow ?? '',
@@ -37,6 +43,7 @@ const Services = ({ content }: { content: PortfolioContent['services'] | any[] |
         <ParallaxSection
             id="services"
             intensity="medium"
+            depthIndex={depthIndex}
             className="relative bg-gray-50 dark:bg-background"
         >
             <div

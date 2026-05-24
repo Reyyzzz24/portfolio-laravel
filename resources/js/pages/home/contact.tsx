@@ -2,7 +2,13 @@ import type { PortfolioContent } from '@/types';
 import { LazyIcon } from '@/components/admin-form-utils';
 import { ParallaxSection } from '@/components/ParallaxSection';
 
-const Contact = ({ content }: { content: PortfolioContent['contact'] | any[] | null }) => {
+const Contact = ({
+    content,
+    depthIndex = 4,
+}: {
+    content: PortfolioContent['contact'] | any[] | null;
+    depthIndex?: number;
+}) => {
     const contentObj = Array.isArray(content)
         ? {
               eyebrow: content[0]?.section_eyebrow ?? 'Get In Touch',
@@ -25,7 +31,7 @@ const Contact = ({ content }: { content: PortfolioContent['contact'] | any[] | n
           });
 
     return (
-        <ParallaxSection id="contact" showParticles particleCount={150} intensity="strong">
+        <ParallaxSection id="contact" showParticles particleCount={150} intensity="strong" depthIndex={depthIndex}>
             <div className="container mx-auto max-w-7xl px-6 md:px-12">
                 <div className="mb-16 text-center">
                     <h3 className="text-sm font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">

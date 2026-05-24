@@ -13,11 +13,17 @@ const itemVariants: Variants = {
     visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } },
 };
 
-const Projects = ({ content }: { content: { eyebrow: string; title: string; items: any[] } | null }) => {
+const Projects = ({
+    content,
+    depthIndex = 2,
+}: {
+    content: { eyebrow: string; title: string; items: any[] } | null;
+    depthIndex?: number;
+}) => {
     const data = content ?? { eyebrow: '', title: '', items: [] };
 
     return (
-        <ParallaxSection id="portofolios" showParticles particleCount={150} intensity="strong">
+        <ParallaxSection id="portofolios" showParticles particleCount={150} intensity="strong" depthIndex={depthIndex}>
             <div className="container mx-auto max-w-7xl px-6 md:px-12">
                 <div className="mb-16">
                     <h3 className="text-sm font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">
