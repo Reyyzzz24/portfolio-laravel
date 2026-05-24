@@ -81,7 +81,7 @@ export default function EditServices({ section = null, services }: { section?: a
     };
 
     return (
-        <div className="p-6 space-y-6">
+        <form onSubmit={submit} className="p-6 space-y-6">
             <Head title="Edit Services Section" />
             <div className="flex justify-between items-center">
                 <div>
@@ -180,6 +180,6 @@ export default function EditServices({ section = null, services }: { section?: a
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </form>
     );
 }

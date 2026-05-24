@@ -1,4 +1,4 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -115,14 +115,36 @@ export function LazyIcon({ name, className, style }: { name: string; className?:
         return <span className="text-xs text-muted-foreground">?</span>;
     }
 
-    // Buat komponen lazy secara real-time
-    const Component = React.lazy(loadIcon);
+    // Use client-only dynamic import to avoid Suspense + SSR mismatch.
+    // Server renders a placeholder <span>, and the client will replace it after loading the icon.
+    const isServer = typeof window === 'undefined';
 
-    return (
-        <Suspense fallback={<div className="h-4 w-4 animate-pulse bg-muted rounded-full" />}>
-            <Component className={className} style={style} />
-        </Suspense>
-    );
+    const [IconComponent, setIconComponent] = useState<React.ComponentType<any> | null>(null);
+
+    useEffect(() => {
+        let mounted = true;
+        // loadIcon returns a function that returns a Promise resolving to the module
+        loadIcon()
+            .then((mod: any) => {
+                const Loaded = mod?.default || mod;
+                if (mounted) setIconComponent(() => Loaded);
+            })
+            .catch(() => {
+                // ignore load errors; keep placeholder
+            });
+
+        return () => {
+            mounted = false;
+        };
+    }, [kebabName]);
+
+    // While on server or while icon not yet loaded on client, render the same placeholder
+    if (isServer || !IconComponent) {
+        return <span className={className} style={style} aria-hidden />;
+    }
+
+    const Component = IconComponent as any;
+    return <Component className={className} style={style} />;
 }
 
 // 5. Komponen Utama Icon Picker

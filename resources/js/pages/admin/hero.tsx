@@ -40,7 +40,7 @@ export default function EditHero({ hero }: HeroProps) {
     };
 
     return (
-        <div className="p-6 space-y-6">
+        <form onSubmit={submit} className="p-6 space-y-6">
             <Head title="Edit Hero Section" />
             <div className="flex justify-between items-center">
                 <div>
@@ -68,6 +68,6 @@ export default function EditHero({ hero }: HeroProps) {
                     <div className="md:col-span-2"><TextArea label="Description Text" value={data.description} onChange={v => setData('description', v)} error={errors.description} rows={4} /></div>
                 </CardContent>
             </Card>
-        </div>
+        </form>
     );
 }

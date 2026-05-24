@@ -1,3 +1,4 @@
+import { useHomepageScrollSnap } from '@/hooks/use-homepage-scroll-snap';
 import Contact from './home/contact';
 import Footer from './home/footer';
 import Hero from './home/hero';
@@ -35,24 +36,22 @@ const HomePage = ({
     skills = [],
     education = [],
 }: HomePageProps) => {
+    useHomepageScrollSnap();
+
     return (
-        <>
+        <main className="homepage-root relative min-h-screen overflow-x-hidden bg-white text-foreground dark:bg-gray-900">
             <Navbar content={navbar} />
-            <Hero content={hero} />
-            {/* Pass model data directly; child components accept both shapes */}
-            <Services content={services} />
-            <Projects content={projects} />
 
-            {/* Pengiriman langsung ke komponen Skills yang sudah kamu pecah */}
-            <Skills
-                section={section}
-                skills={skills}
-                education={education}
-            />
+            <div className="homepage-ruler">
+                <Hero content={hero} />
+                <Services content={services} />
+                <Projects content={projects} />
+                <Skills section={section} skills={skills} education={education} />
+                <Contact content={contact} />
+            </div>
 
-            <Contact content={contact} />
             <Footer content={footer} />
-        </>
+        </main>
     );
 };
 

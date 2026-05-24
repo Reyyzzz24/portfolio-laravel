@@ -7,18 +7,15 @@ import {
     Image,
     Briefcase,
     Cpu,
-    GraduationCap,
     Navigation,
     Mail,
     LayoutPanelLeft,
     Users,
     ShieldCheck,
+    ChevronRight,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
-import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
-import { dashboard as adminDashboard } from '@/routes/admin';
 import {
     Sidebar,
     SidebarContent,
@@ -27,60 +24,40 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarMenuSub,
+    SidebarMenuSubButton,
+    SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { dashboard } from '@/routes';
-import type { NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
+const navGroups = [
     {
-        title: 'Admin Dashboard',
-        href: '/admin',
-        icon: LayoutDashboard,
+        title: "Content Management",
+        icon: LayoutGrid,
+        items: [
+            { title: 'Navbar', href: '/admin/navbar', icon: Navigation },
+            { title: 'Hero', href: '/admin/hero', icon: Image },
+            { title: 'Services', href: '/admin/services', icon: Briefcase },
+            { title: 'Projects', href: '/admin/projects', icon: FolderGit2 },
+            { title: 'Contact', href: '/admin/contact', icon: Mail },
+            { title: 'Footer', href: '/admin/footer', icon: LayoutPanelLeft },
+            { title: 'Skills & Edu', href: '/admin/skills-educations', icon: Cpu },
+            { title: 'App Gallery', href: '/admin/website-app', icon: BookOpen },
+            { title: 'Design & Photography', href: '/admin/design-photography', icon: Image },
+        ],
     },
     {
-        title: 'Navbar Section',
-        href: '/admin/navbar',
-        icon: Navigation, // Lebih tepat untuk navigasi
-    },
-    {
-        title: 'Hero Section',
-        href: '/admin/hero',
-        icon: Image,
-    },
-    {
-        title: 'Services Section',
-        href: '/admin/services',
-        icon: Briefcase,
-    },
-    {
-        title: 'Projects Section',
-        href: '/admin/projects',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Contact Section',
-        href: '/admin/contact',
-        icon: Mail, // Ikon surat lebih cocok untuk kontak
-    },
-    {
-        title: 'Footer Section',
-        href: '/admin/footer',
-        icon: LayoutPanelLeft, // Membedakan dengan Navbar
-    },
-    {
-        title: 'Skills & Education',
-        href: '/admin/skills-educations',
-        icon: Cpu, // Bisa juga diganti 'GraduationCap'
-    },
-    {
-        title: 'User Management',
-        href: '/admin/users',
-        icon: Users, // Standar untuk manajemen user
-    },
-    {
-        title: 'Roles & Permissions',
-        href: '/admin/roles',
-        icon: ShieldCheck, // Ikon perisai sangat umum untuk roles/permissions
+        title: "System & Security",
+        icon: ShieldCheck,
+        items: [
+            { title: 'User Management', href: '/admin/users', icon: Users },
+            { title: 'Roles & Permissions', href: '/admin/roles', icon: ShieldCheck },
+        ],
     }
 ];
 
@@ -100,7 +77,44 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                {/* Dashboard Utama */}
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild>
+                            <Link href="/admin">
+                                <LayoutDashboard /> <span>Dashboard</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+
+                    {/* Render Nav Groups */}
+                    {navGroups.map((group) => (
+                        <Collapsible key={group.title} defaultOpen className="group/collapsible">
+                            <SidebarMenuItem>
+                                <CollapsibleTrigger asChild>
+                                    <SidebarMenuButton>
+                                        <group.icon /> <span>{group.title}</span>
+                                        <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                    </SidebarMenuButton>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                    <SidebarMenuSub>
+                                        {group.items.map((item) => (
+                                            <SidebarMenuSubItem key={item.href}>
+                                                <SidebarMenuSubButton asChild>
+                                                    <Link href={item.href}>
+                                                        <item.icon className="w-4 h-4" />
+                                                        <span>{item.title}</span>
+                                                    </Link>
+                                                </SidebarMenuSubButton>
+                                            </SidebarMenuSubItem>
+                                        ))}
+                                    </SidebarMenuSub>
+                                </CollapsibleContent>
+                            </SidebarMenuItem>
+                        </Collapsible>
+                    ))}
+                </SidebarMenu>
             </SidebarContent>
 
             <SidebarFooter>

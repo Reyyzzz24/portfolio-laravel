@@ -16,7 +16,7 @@ const Footer = ({ content = [] }: { content: PortfolioContent['footer'] | any[] 
       : (safeContent[0]?.copyright || "All Rights Reserved");
 
   return (
-    <footer className="py-12 border-t border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900 text-center transition-colors duration-300">
+    <footer className="homepage-chrome-footer bg-gray-50 dark:bg-background relative z-20 py-10 text-center">
       <div className="container mx-auto px-6">
         
         {/* Social Links Row dengan animasi stagger */}

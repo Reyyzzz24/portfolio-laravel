@@ -98,7 +98,8 @@
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
+    --background: #141921;
+    --background2: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.145 0 0);
     --card-foreground: oklch(0.985 0 0);
@@ -138,10 +139,25 @@
     }
 
     body {
-        @apply bg-background text-foreground;
+        @apply bg-background text-foreground min-h-screen;
     }
 
     html {
         scroll-behavior: smooth;
+    }
+
+    /* Homepage: match section wrapper so parallax never reveals body gaps */
+    body:has(.homepage-root) {
+        @apply bg-white dark:bg-gray-900;
+    }
+
+    /* Ruler snap: viewport scroll, only sections in .homepage-ruler (not navbar/footer) */
+    html:has(.homepage-root) {
+        scroll-snap-type: y proximity;
+    }
+
+    .homepage-ruler .homepage-snap-section {
+        scroll-snap-align: center;
+        scroll-snap-stop: normal;
     }
 }
